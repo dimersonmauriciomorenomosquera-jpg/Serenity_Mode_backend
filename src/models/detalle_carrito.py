@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
 class Detalle_Carrito(Base):
     __tablename__ = "detalle_carrito"
 
     id_detalle_carrito = Column(Integer, primary_key=True)
     id_carrito = Column(Integer, ForeignKey("carrito.id_carrito"),nullable=False)
-    id_producto = Column(Integer, ForeignKey("producto.id_producto"), nullable=False)
+    id_producto = Column(Integer, ForeignKey("productos.id_producto"), nullable=False)
     cantidad = Column(Integer, nullable=False)
     precio_unitario =Column(Numeric(10,2),nullable=False)
 

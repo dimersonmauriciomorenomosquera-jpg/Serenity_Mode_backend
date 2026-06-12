@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
-class Clientes(Base):
-    __tablename__ = "clientes"
+class Cliente(Base):
+    __tablename__ = "cliente"
     
     id_cliente = Column(Integer, primary_key=True)
     nombre_cliente = Column(String(225), nullable=False)
-    dirrecion_cliente = Column(String(225), nullable=False)
+    direccion_cliente = Column(String(225), nullable=False)
     nacimiento_cliente = Column(Date, nullable=False)
     email_cliente = Column(String(225), nullable=False, unique=True)
     numero_cliente = Column(String(20), nullable=False, unique=True)
@@ -14,7 +14,7 @@ class Clientes(Base):
 
     def __init__(self, nombre_cliente, dirrecion_cliente,email_cliente,numero_cliente,nacimiento_cliente):
         self.nombre_cliente = nombre_cliente
-        self.dirrecion_cliente = dirrecion_cliente
+        self.direccion_cliente = direccion_cliente
         self.nacimiento_cliente = nacimiento_cliente
         self.email_cliente = email_cliente
         self.numero_cliente = numero_cliente
@@ -33,12 +33,12 @@ class Clientes(Base):
 
     @staticmethod
     def get():
-        clientes = session.query(Clientes).all()
-        return clientes
+        cliente = session.query(Cliente).all()
+        return cliente
 
     @staticmethod
     def get_by_id(id):
-        return session.query(Clientes).filter_by(
+        return session.query(Cliente).filter_by(
             id_cliente=id
         ).first()
 

@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
 class Detalle_Factura(Base):
     __tablename__ = "detalle_factura"
 
     id_detalle_factura = Column(Integer, primary_key=True)
     id_factura = Column(Integer, ForeignKey(f"factura.id_factura"),nullable=False)
-    id_producto = Column(Integer, ForeignKey("producto.id_producto"),nullable=False)
+    id_producto = Column(Integer, ForeignKey("productos.id_producto"),nullable=False)
     cantidad = Column(Integer, nullable=False)
     precio_unitario = Column(Numeric(10,2),nullable=False)
     subtotal = Column(Numeric(10,2), nullable=False)

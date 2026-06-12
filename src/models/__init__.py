@@ -1,14 +1,14 @@
-from sqlalchemy import  create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import pymysql
 
+engine = create_engine(
+    "mysql+pymysql://root@localhost:3306/serenity_mode?charset=utf8mb4"
+)
 
+connection = engine.connect()
 
-engine = create_engine("mysql+pymysql://root@localhost:3306/serenitymode?charset=utf8mb4")
-
-connetion = engine.connect()
-
-Session = sessionmarker(bind-engine)
+Session = sessionmaker(bind=engine)
 
 session = Session()
 

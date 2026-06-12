@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
 class Productos(Base):
     __tablename__ = 'productos'

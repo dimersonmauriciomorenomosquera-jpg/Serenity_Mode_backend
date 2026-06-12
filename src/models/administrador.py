@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
 class Administrador(Base):
     __tablename__ = "administrador"

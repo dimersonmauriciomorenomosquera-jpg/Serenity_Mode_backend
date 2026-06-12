@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
-from src.mdels import Base, session
+from src.models import Base, session
 
 class Factura(Base):
     __tablename__ = "factura"
@@ -7,8 +7,8 @@ class Factura(Base):
     id_factura = Column(Integer, primary_key=True)
     fecha_factura = Column(Date, nullable=False)
     total_pagar = Column(Numeric(10,2), nullable=False)
-    estado_pago = Column(string(50), nullable=False)
-    id_cliente = column(Integer, ForeignKey("clientes.id_cliente"))
+    estado_pago = Column(String(50), nullable=False)
+    id_cliente = Column(Integer, ForeignKey("cliente.id_cliente"))
     id_carrito = Column(Integer, ForeignKey("carrito.id_carrito"))
 
     def __init__(self, fecha_factura, total_pagar, estado_pago, id_cliente, id_carrito):
