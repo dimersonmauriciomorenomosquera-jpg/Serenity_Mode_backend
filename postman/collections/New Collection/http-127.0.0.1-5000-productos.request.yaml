@@ -1,0 +1,26 @@
+$kind: http-request
+name: http://127.0.0.1:5000/productos
+url: http://127.0.0.1:5000/productos
+method: POST
+body:
+  type: json
+  content: "{ \"categoria\": \"Deportivos\", \r
+
+    \  \"descripcion_producto\": \"Zapato deportivo\", \r
+
+    \  \"marca_producto\": \"Nike\",\r
+
+    \  \"nombre_producto\": \"Nike sky\", \r
+
+    \  \"precio_producto\": 250000.00, \r
+
+    \  \"sku\": \"NIKE12\", \r
+
+    \  \"stock_producto\": 10, \r
+
+    \  \"talla\": \"40\", \r
+
+    \  \"codigo_barras\": \"TGT-5484554\"\r
+
+    }"
+order: 2000
