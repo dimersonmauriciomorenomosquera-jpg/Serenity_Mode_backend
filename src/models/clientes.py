@@ -12,17 +12,30 @@ class Cliente(Base):
     numero_cliente = Column(String(20), nullable=False, unique=True)
 
 
-    def __init__(self, nombre_cliente, dirrecion_cliente,email_cliente,numero_cliente,nacimiento_cliente):
+    def __init__(self, nombre_cliente, direccion_cliente,email_cliente,numero_cliente,nacimiento_cliente):
         self.nombre_cliente = nombre_cliente
         self.direccion_cliente = direccion_cliente
         self.nacimiento_cliente = nacimiento_cliente
         self.email_cliente = email_cliente
         self.numero_cliente = numero_cliente
         
+    def to_dict(self):
+        return {
+            "id_cliente": self.id_cliente,
+            "nombre_cliente": self.nombre_cliente,
+            "nacimiento_cliente": self.nacimiento_cliente,
+            "email_cliente": self.email_cliente,
+            "numero_cliente": self.numero_cliente,
+            "direccion_cliente": self.direccion_cliente
+        }
 
     def save(self):
-        session.add(self)
-        session.commit()
+        try:
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     def delete(self):
         session.delete(self)

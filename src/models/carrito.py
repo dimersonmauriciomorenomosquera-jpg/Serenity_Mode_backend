@@ -9,9 +9,10 @@ class Carrito(Base):
     total_carrito = Column(Numeric(10,2), nullable=False)
     id_cliente = Column(Integer, ForeignKey("cliente.id_cliente") )
 
-    def __init__ (self, fecha_creacion, total_carrito):
+    def __init__ (self, fecha_creacion, total_carrito, id_cliente):
         self.fecha_creacion = fecha_creacion
         self.total_carrito = total_carrito
+        self.id_cliente = id_cliente
 
     def save(self):
         session.add(self)

@@ -10,6 +10,7 @@ class Pago(Base):
     metodo_pago = Column(String(50), nullable=False)
     estado_pago = Column(String(50), nullable=False)
     id_factura = Column(Integer, ForeignKey("factura.id_factura"))
+    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"))
 
     def __init__(self, fecha_pago, monto, metodo_pago, estado_pago, id_cliente, id_factura):
         self.fecha_pago = fecha_pago
@@ -19,9 +20,24 @@ class Pago(Base):
         self.id_cliente = id_cliente
         self.id_factura = id_factura
 
+    def to_dict(self):
+        return {
+            "id_pago": self.id_pago,
+            "fecha_pago": self.fecha_pago,
+            "estado_pago": self.estado_pago,
+            "monto": self.monto,
+            "estado_pago": self.estado_pago,
+            "id_cliente": self.id_cliente,
+            "id_factura": self.id_factura
+        }
+
     def save(self):
-        session.add(self)
-        session.commit()
+        try:
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     def delete(self):
         session.delete(self)

@@ -12,17 +12,33 @@ class Administrador(Base):
     estado_administrador = Column(String(50), nullable=False)
     password_administrador = Column(String(25), nullable=False)
 
-    def __init__ (self, rol_administrador, nombre_administrador, telefono_administrador, email_administrador, estado_administrador, contraseña_administrador):
+    def __init__ (self, rol_administrador, nombre_administrador, telefono_administrador, email_administrador, estado_administrador, password_administrador):
         self.nombre_administrador = nombre_administrador
         self.telefono_administrador = telefono_administrador
         self.email_administrador = email_administrador
         self.rol_administrador = rol_administrador
         self.estado_administrador = estado_administrador
-        self.contraseña_administrador = contraseña_administrador
+        self.password_administrador = password_administrador
+
+    def to_dict(self):
+        return {
+            "id_administrador": self.id_administrador,
+            "nombre_administrador": self.nombre_administrador,
+            "telefono_administrador": self.telefono_administrador,
+            "email_administrador": self.email_administrador,
+            "rol_administrador": self.rol_administrador,
+            "estado_administrador": self.estado_administrador,
+            "password_administrador": self.password_administrador,
+        }
 
     def save(self):
-        session.add(self)
-        session.commit()
+        try:
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+
 
     def delete(self):
         session.delete(self)
