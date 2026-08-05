@@ -14,8 +14,9 @@ def get_clientes():
             'nacimiento_cliente': cliente.nacimiento_cliente,
             'numero_cliente': cliente.numero_cliente,
             'direccion_cliente': cliente.direccion_cliente,
-            'email_cliente': cliente.email_cliente
-        })
+            'email_cliente': cliente.email_cliente,
+            'password':password
+        }), 
     return jsonify(Clientes_list), 200
 
 @Clientes_bp.route('/<int:id>', methods=['GET'])
@@ -28,7 +29,8 @@ def get_cliente(id):
             'nacimiento_cliente': cliente.nacimiento_cliente,
             'numero_cliente': cliente.numero_cliente,
             'direccion_cliente': cliente.direccion_cliente,
-            'email_cliente': cliente.email_cliente
+            'email_cliente': cliente.email_cliente,
+            'password': password
         }
         return jsonify(Clientes_data), 200
     else:
@@ -44,6 +46,7 @@ def create_clientes():
         numero_cliente=data['numero_cliente'],
         direccion_cliente=data['direccion_cliente'],
         email_cliente=data['email_cliente'],
+        password=data["password"]
     )
     try:
         float(data['numero_cliente'])
@@ -86,6 +89,7 @@ def update_Clientes(id):
         cliente.direccion_cliente=data['direccion_cliente']
         cliente.numero_cliente=data['numero_cliente']
         cliente.email_cliente=data['email_cliente']
+        cliente.password=data["password"]
         cliente.activo = True
         try:
             float(data['numero_cliente'])

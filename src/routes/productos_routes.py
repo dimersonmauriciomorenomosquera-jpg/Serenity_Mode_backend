@@ -3,23 +3,55 @@ from src.models.productos import Productos
 
 Productos_bp = Blueprint('Productos', __name__)
 
-@Productos_bp.route('/', methods=['GET'])
+@Productos_bp.route('/buscar', methods=['GET'])
 def get_productos():
-    productos = Productos.get()
-    Productos_list = []
-    for producto in productos:
-        Productos_list.append({
-            'id_producto': producto.id_producto,
-            'nombre_producto': producto.nombre_producto,
-            'descripcion_producto': producto.descripcion_producto,
-            'talla': producto.talla,
-            'precio_producto': producto.precio_producto,
-            'stock_producto': producto.stock_producto,
-            'marca_producto': producto.marca_producto,
-            'sku': producto.sku,
-            'categoria': producto.categoria
+
+    buscar = request.args.get("buscar")
+    categoria = request.args.get("categoria")
+    ordenar = request.args.get("ordenar")
+
+    pagina = int(request.args.get("pagina", 1))
+    por_pagina = int(request.args.get("por_pagina", 12))
+
+    resultado = Productos.get(
+        buscar=buscar,
+        categoria=categoria,
+        ordenar=ordenar,
+        pagina=pagina,
+        por_pagina=por_pagina
+    )
+
+    productos = []
+
+    for producto in resultado["productos"]:
+
+        productos.append({
+            "id_producto": producto.id_producto,
+            "nombre_producto": producto.nombre_producto,
+            "descripcion_producto": producto.descripcion_producto,
+            "talla": producto.talla,
+            "precio_producto": float(producto.precio_producto),
+            "stock_producto": producto.stock_producto,
+            "marca_producto": producto.marca_producto,
+            "sku": producto.sku,
+            "categoria": producto.categoria,
+            "imagen": producto.imagen
         })
-    return jsonify(Productos_list), 200
+
+    return jsonify({
+
+        "productos": productos,
+
+        "pagina": resultado["pagina"],
+
+        "por_pagina": resultado["por_pagina"],
+
+        "total_productos": resultado["total_productos"],
+
+        "total_paginas": resultado["total_paginas"]
+
+    }), 200
+
 
 @Productos_bp.route('/<int:id>', methods=['GET'])
 def get_producto(id):
@@ -33,10 +65,11 @@ def get_producto(id):
             'precio_producto': producto.precio_producto,
             'stock_producto': producto.stock_producto,
             'marca_producto': producto.marca_producto,
-            'sku': productos.sku,
-            'categoria': producto.categoria
+            'sku': producto.sku,
+            'categoria': producto.categoria,
+            'imagen': producto.imagen
         }
-        return jsonify(productos_data), 200
+        return jsonify(producto_data), 200
     else:
         return jsonify({'message': 'Producto no encontrado'}), 404
 
@@ -53,7 +86,8 @@ def create_producto():
         stock_producto=data['stock_producto'],
         marca_producto=data['marca_producto'],
         sku=data['sku'],
-        categoria=data['categoria']
+        categoria=data['categoria'],
+        imagen=data['imagen']
     )
     try:
         float(producto.precio_producto)
@@ -78,15 +112,25 @@ def create_producto():
     if producto.marca_producto == '':
         return jsonify({'message':'La marca del prodcuto es obligatoria'}), 400
 
-    if producto.talla =='':
-        return jsonify({'message':'la talla debe ser un numero valido entre 33 y 43' }), 400
+    if producto.categoria.lower() in ["ropa", "zapatos"]:
 
+        if producto.talla.strip() == "":
+            return jsonify({
+                "message": "La talla es obligatoria para ropa y zapatos."
+        }), 400
+
+    elif producto.categoria.lower() == "accesorios":
+
+        producto.talla = "N/A"
     if producto.sku =='':
         return jsonify({'message':'el identificador del producto debe ser unico'}), 400
 
     
     if producto.categoria == '':
         return jsonify({'message': 'La categoria es obligatoria'}), 400 
+
+    if producto.imagen == '':
+        return jsonify({'message': 'La url de la imagen es obligatoria'}), 400 
     
     
 
@@ -117,6 +161,7 @@ def update_Productos(id):
         producto.marca_producto=data['marca_producto']
         producto.sku=data['sku']
         producto.categoria=data['categoria']
+        producto.imagen=data['imagen']
         producto.activo = True
         try:
             producto.precio_producto = float(producto.precio_producto)
@@ -150,6 +195,10 @@ def update_Productos(id):
     
         if producto.categoria == '':
             return jsonify({'message': 'La categoria es obligatoria'}), 400
+        
+        if producto.imagen == '':
+            return jsonify({'message': 'La url de la imagen es obligatoria'}), 400 
+    
     
     
 

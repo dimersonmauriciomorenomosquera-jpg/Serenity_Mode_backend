@@ -36,6 +36,10 @@ class Carrito(Base):
             id_carrito=id
         ).first()
 
-
+    @staticmethod
+    def get_by_cliente(id_cliente):
+        return session.query(Carrito).filter_by(
+            id_cliente=id_cliente
+    ).first()
 
 

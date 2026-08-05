@@ -10,15 +10,16 @@ class Cliente(Base):
     nacimiento_cliente = Column(Date, nullable=False)
     email_cliente = Column(String(225), nullable=False, unique=True)
     numero_cliente = Column(String(20), nullable=False, unique=True)
+    password = Column(String(255), nullable=False)
 
-
-    def __init__(self, nombre_cliente, direccion_cliente,email_cliente,numero_cliente,nacimiento_cliente):
+    def __init__(self, nombre_cliente, direccion_cliente,email_cliente,numero_cliente,nacimiento_cliente,password):
         self.nombre_cliente = nombre_cliente
         self.direccion_cliente = direccion_cliente
         self.nacimiento_cliente = nacimiento_cliente
         self.email_cliente = email_cliente
         self.numero_cliente = numero_cliente
-        
+        self.password = password
+
     def to_dict(self):
         return {
             "id_cliente": self.id_cliente,
@@ -54,5 +55,15 @@ class Cliente(Base):
         return session.query(Cliente).filter_by(
             id_cliente=id
         ).first()
+
+
+    @staticmethod
+    def get_by_email(email):
+
+        return session.query(Cliente).filter_by(
+            email_cliente=email
+        ).first()
+
+    
 
 
