@@ -1,12 +1,20 @@
 from flask import Blueprint, request, jsonify
 from src.models.detalle_factura import DetalleFactura
 from src.models import session
+from src.utils.decorators import admin_required
 
 DetalleFactura_bp = Blueprint("detalle_factura", __name__)
 
+
+# ==========================================================
 # GET - Obtener todos los detalles
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @DetalleFactura_bp.route("/", methods=["GET"])
+@admin_required
 def get_detalles_factura():
+
     detalles = session.query(DetalleFactura).all()
 
     return jsonify([
@@ -22,9 +30,15 @@ def get_detalles_factura():
     ])
 
 
+# ==========================================================
 # POST - Crear detalle de factura
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @DetalleFactura_bp.route("/", methods=["POST"])
+@admin_required
 def create_detalle_factura():
+
     data = request.get_json()
 
     nuevo_detalle = DetalleFactura(
@@ -38,43 +52,8 @@ def create_detalle_factura():
     session.add(nuevo_detalle)
     session.commit()
 
-    return jsonify({"mensaje": "Detalle de factura creado correctamente"}), 201
+    return jsonify({
+        "mensaje": "Detalle de factura creado correctamente"
+    }), 201
 
 
-# PUT - Actualizar detalle
-@DetalleFactura_bp.route("/<int:id>", methods=["PUT"])
-def update_detalle_factura(id):
-    detalle = session.query(DetalleFactura).filter_by(
-        id_detalle_factura=id
-    ).first()
-
-    if not detalle:
-        return jsonify({"error": "Detalle no encontrado"}), 404
-
-    data = request.get_json()
-
-    detalle.id_factura = data.get("id_factura", detalle.id_factura)
-    detalle.id_producto = data.get("id_producto", detalle.id_producto)
-    detalle.cantidad = data.get("cantidad", detalle.cantidad)
-    detalle.precio_unitario = data.get("precio_unitario", detalle.precio_unitario)
-    detalle.subtotal = data.get("subtotal", detalle.subtotal)
-
-    session.commit()
-
-    return jsonify({"mensaje": "Detalle actualizado correctamente"})
-
-
-# DELETE - Eliminar detalle
-@DetalleFactura_bp.route("/<int:id>", methods=["DELETE"])
-def delete_detalle_factura(id):
-    detalle = session.query(DetalleFactura).filter_by(
-        id_detalle_factura=id
-    ).first()
-
-    if not detalle:
-        return jsonify({"error": "Detalle no encontrado"}), 404
-
-    session.delete(detalle)
-    session.commit()
-
-    return jsonify({"mensaje": "Detalle eliminado correctamente"})

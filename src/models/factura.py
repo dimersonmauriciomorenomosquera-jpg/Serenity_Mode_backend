@@ -30,12 +30,30 @@ class Factura(Base):
         session.commit()
 
     @staticmethod
-    def get():
-        factura = session.query(Factura).all()
-        return factura
+    def get(page=1, per_page=10):
+        query = session.query(Factura)
+
+        total = query.count()
+
+        facturas = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return facturas, total
 
     @staticmethod
     def get_by_id(id):
         return session.query(Factura).filter_by(
             id_factura=id
         ).first()   
+
+    def save(self):
+        try:
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e

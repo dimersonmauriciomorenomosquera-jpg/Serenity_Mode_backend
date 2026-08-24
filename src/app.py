@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+from datetime import timedelta
 from flask_jwt_extended import JWTManager
 from src.models import Base, engine
 from src.models.clientes import Cliente
@@ -13,7 +14,7 @@ from src.models.administrador import Administrador
 from src.models.metodos_pago import MetodoPago
 from src.routes.detalle_carrito_routes import DetalleCarrito_bp
 
-
+from src.routes.envio_routes import Envio_bp
 from src.routes.productos_routes import Productos_bp
 from src.routes.clientes_routes import Clientes_bp
 from src.routes.administradores_routes import Administradores_bp
@@ -29,6 +30,8 @@ from src.routes.auth_routes import Auth_bp
 app = Flask(__name__)
 Base.metadata.create_all(engine)
 
+
+app.register_blueprint(Envio_bp, url_prefix='/envio')
 app.register_blueprint(Productos_bp, url_prefix='/productos')
 app.register_blueprint(Clientes_bp, url_prefix='/clientes')
 app.register_blueprint(Administradores_bp, url_prefix='/administrador')
@@ -47,6 +50,8 @@ CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5001"}}
 )
 
 app.config["JWT_SECRET_KEY"] = "serenity_mode_secret"
+
+
 
 jwt = JWTManager(app) 
 

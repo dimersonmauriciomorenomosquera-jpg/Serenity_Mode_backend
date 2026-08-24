@@ -22,9 +22,7 @@ class Envio(Base):
         self.fecha_factura = fecha_factura
         self.estado_envio = estado_envio
 
-    def save(self):
-        session.add(self)
-        session.commit()
+
 
     def delete(self):
         session.delete(self)
@@ -34,12 +32,30 @@ class Envio(Base):
         session.commit()
 
     @staticmethod
-    def get():
-        envio = session.query(Envio).all()
-        return envio
+    def get(page=1, per_page=10):
+        query = session.query(Envio)
+
+        total = query.count()
+
+        envios = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return envios, total
 
     @staticmethod
     def get_by_id(id):
         return session.query(Envio).filter_by(
             id_envio=id
         ).first()   
+    
+    def save(self):
+        try:
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e

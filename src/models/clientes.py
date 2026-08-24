@@ -46,9 +46,19 @@ class Cliente(Base):
         session.commit()
 
     @staticmethod
-    def get():
-        cliente = session.query(Cliente).all()
-        return cliente
+    def get(page=1, per_page=10):
+        query = session.query(Cliente)
+
+        total = query.count()
+
+        clientes = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return clientes, total
 
     @staticmethod
     def get_by_id(id):

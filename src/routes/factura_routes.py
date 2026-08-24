@@ -2,11 +2,43 @@ from flask import Blueprint, request, jsonify
 from src.models.factura import Factura
 from datetime import datetime
 
+from flask_jwt_extended import jwt_required
+from src.utils.decorators import admin_required
+
+
 Factura_bp = Blueprint('Factura', __name__)
 
+
+# ==========================================================
+# OBTENER TODAS LAS FACTURAS
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @Factura_bp.route('/', methods=['GET'])
+@jwt_required()
+@admin_required
 def get_facturas():
-    facturas = Factura.get()
+
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    if page < 1:
+        return jsonify({
+            'message': 'La página debe ser mayor o igual a 1'
+        }), 400
+
+    if per_page < 1:
+        return jsonify({
+            'message': 'La cantidad por página debe ser mayor o igual a 1'
+        }), 400
+
+    facturas, total = Factura.get(
+        page=page,
+        per_page=per_page
+    )
+
+    total_pages = (total + per_page - 1) // per_page
+
     lista = []
 
     for factura in facturas:
@@ -19,14 +51,33 @@ def get_facturas():
             'id_carrito': factura.id_carrito
         })
 
-    return jsonify(lista), 200
+    return jsonify({
+        'data': lista,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': total_pages
+        }
+    }), 200
+
+
+# ==========================================================
+# OBTENER UNA FACTURA POR ID
+# SOLO ADMINISTRADORES
+# ==========================================================
 
 @Factura_bp.route('/<int:id>', methods=['GET'])
+@jwt_required()
+@admin_required
 def get_factura(id):
+
     factura = Factura.get_by_id(id)
 
     if not factura:
-        return jsonify({'message': 'Factura no encontrada'}), 404
+        return jsonify({
+            'message': 'Factura no encontrada'
+        }), 404
 
     return jsonify({
         'id_factura': factura.id_factura,
@@ -38,8 +89,16 @@ def get_factura(id):
     }), 200
 
 
+# ==========================================================
+# CREAR FACTURA
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @Factura_bp.route('/', methods=['POST'])
+@jwt_required()
+@admin_required
 def create_factura():
+
     data = request.get_json()
 
     required = [
@@ -61,6 +120,7 @@ def create_factura():
             data['fecha_factura'],
             "%Y-%m-%d"
         ).date()
+
     except ValueError:
         return jsonify({
             'message': 'Formato de fecha inválido (YYYY-MM-DD)'
@@ -68,7 +128,8 @@ def create_factura():
 
     try:
         total = float(data['total_pagar'])
-    except ValueError:
+
+    except (ValueError, TypeError):
         return jsonify({
             'message': 'El total debe ser numérico'
         }), 400
@@ -87,8 +148,17 @@ def create_factura():
         'message': 'Factura creada exitosamente'
     }), 201
 
+
+# ==========================================================
+# ELIMINAR FACTURA
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @Factura_bp.route('/<int:id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
 def delete_factura(id):
+
     factura = Factura.get_by_id(id)
 
     if not factura:
@@ -102,8 +172,17 @@ def delete_factura(id):
         'message': 'Factura eliminada exitosamente'
     }), 200
 
+
+# ==========================================================
+# ACTUALIZAR FACTURA
+# SOLO ADMINISTRADORES
+# ==========================================================
+
 @Factura_bp.route('/<int:id>', methods=['PUT'])
+@jwt_required()
+@admin_required
 def update_factura(id):
+
     factura = Factura.get_by_id(id)
 
     if not factura:
@@ -119,6 +198,7 @@ def update_factura(id):
                 data['fecha_factura'],
                 "%Y-%m-%d"
             ).date()
+
         except ValueError:
             return jsonify({
                 'message': 'Fecha inválida'
@@ -127,7 +207,8 @@ def update_factura(id):
     if 'total_pagar' in data:
         try:
             factura.total_pagar = float(data['total_pagar'])
-        except ValueError:
+
+        except (ValueError, TypeError):
             return jsonify({
                 'message': 'Total inválido'
             }), 400

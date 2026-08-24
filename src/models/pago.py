@@ -10,7 +10,7 @@ class Pago(Base):
     metodo_pago = Column(String(50), nullable=False)
     estado_pago = Column(String(50), nullable=False)
     id_factura = Column(Integer, ForeignKey("factura.id_factura"))
-    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"))
+    id_cliente = Column(Integer, ForeignKey("cliente.id_cliente"))
 
     def __init__(self, fecha_pago, monto, metodo_pago, estado_pago, id_cliente, id_factura):
         self.fecha_pago = fecha_pago
@@ -44,9 +44,19 @@ class Pago(Base):
         session.commit()
 
     @staticmethod
-    def get():
-        pago = session.query(Pago).all()
-        return pago
+    def get(page=1, per_page=10):
+        query = session.query(Pago)
+
+        total = query.count()
+
+        pagos = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return pagos, total
 
     @staticmethod
     def get_by_id(id):

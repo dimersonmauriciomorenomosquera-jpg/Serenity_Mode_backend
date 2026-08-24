@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-
+from src.models.administrador import Administrador
 from src.models.clientes import Cliente
 
 from werkzeug.security import (
@@ -125,9 +125,7 @@ def registro():
 
     }),201
 
-
-
-# =========================================
+    # =========================================
 # LOGIN
 # =========================================
 
@@ -188,11 +186,11 @@ def login():
     # Crear token JWT
 
     token = create_access_token(
-
-        identity=str(cliente.id_cliente)
-
+        identity=str(cliente.id_cliente),
+        additional_claims={
+            "tipo": "cliente"
+        }
     )
-
 
     return jsonify({
 
@@ -328,5 +326,110 @@ def restablecer_password():
     return jsonify({
 
         "message": "Contraseña actualizada correctamente."
+
+    }), 200
+
+
+
+# ==========================================================
+# LOGIN ADMINISTRADOR
+# ==========================================================
+
+@Auth_bp.route("/admin/login", methods=["POST"])
+def login_admin():
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "message": "Debe enviar información."
+        }), 400
+
+    email = data.get("email_administrador")
+    password = data.get("password_administrador")
+
+    # ==========================================
+    # VALIDAR CAMPOS
+    # ==========================================
+
+    if not email:
+        return jsonify({
+            "message": "El correo es obligatorio."
+        }), 400
+
+    if not password:
+        return jsonify({
+            "message": "La contraseña es obligatoria."
+        }), 400
+
+    # ==========================================
+    # BUSCAR ADMINISTRADOR
+    # ==========================================
+
+    administrador = Administrador.get_by_email(email)
+
+    if administrador is None:
+        return jsonify({
+            "message": "Administrador no encontrado."
+        }), 404
+
+    # ==========================================
+    # VERIFICAR ESTADO
+    # ==========================================
+
+    if administrador.estado_administrador != "Activo":
+        return jsonify({
+            "message": "El administrador está inactivo."
+        }), 403
+
+    # ==========================================
+    # VERIFICAR CONTRASEÑA
+    # ==========================================
+
+    if not check_password_hash(
+        administrador.password_administrador,
+        password
+    ):
+        return jsonify({
+            "message": "Contraseña incorrecta."
+        }), 401
+
+    # ==========================================
+    # CREAR TOKEN
+    # ==========================================
+
+    token = create_access_token(
+        identity=str(administrador.id_administrador),
+        additional_claims={
+            "tipo": "administrador",
+            "rol": administrador.rol_administrador
+        }
+    )
+
+    # ==========================================
+    # RESPUESTA
+    # ==========================================
+
+    return jsonify({
+
+        "message": "Inicio de sesión de administrador exitoso.",
+
+        "token": token,
+
+        "administrador": {
+
+            "id_administrador":
+                administrador.id_administrador,
+
+            "nombre":
+                administrador.nombre_administrador,
+
+            "email":
+                administrador.email_administrador,
+
+            "rol":
+                administrador.rol_administrador
+
+        }
 
     }), 200

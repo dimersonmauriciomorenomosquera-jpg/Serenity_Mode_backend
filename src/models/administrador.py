@@ -10,7 +10,7 @@ class Administrador(Base):
     email_administrador = Column(String(120),nullable=False, unique=True)
     rol_administrador = Column(String(50), nullable=False)
     estado_administrador = Column(String(50), nullable=False)
-    password_administrador = Column(String(25), nullable=False)
+    password_administrador = Column(String(225), nullable=False)
 
     def __init__ (self, rol_administrador, nombre_administrador, telefono_administrador, email_administrador, estado_administrador, password_administrador):
         self.nombre_administrador = nombre_administrador
@@ -27,8 +27,7 @@ class Administrador(Base):
             "telefono_administrador": self.telefono_administrador,
             "email_administrador": self.email_administrador,
             "rol_administrador": self.rol_administrador,
-            "estado_administrador": self.estado_administrador,
-            "password_administrador": self.password_administrador,
+            "estado_administrador": self.estado_administrador
         }
 
     def save(self):
@@ -56,4 +55,10 @@ class Administrador(Base):
     def get_by_id(id):
         return session.query(Administrador).filter_by(
         id_administrador=id
+        ).first()
+
+    @staticmethod
+    def get_by_email(email):
+        return session.query(Administrador).filter_by(
+        email_administrador=email
         ).first()
