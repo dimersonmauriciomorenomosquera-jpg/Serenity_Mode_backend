@@ -50,7 +50,7 @@ CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5001"}}
 )
 
 app.config["JWT_SECRET_KEY"] = "serenity_mode_secret"
-
+app.config["SECRET_KEY"] = "serenity_mode_session_secret"
 
 
 jwt = JWTManager(app) 
