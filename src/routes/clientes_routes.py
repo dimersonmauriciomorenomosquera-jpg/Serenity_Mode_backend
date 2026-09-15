@@ -6,22 +6,41 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from src.utils.decorators import admin_required
 
-Clientes_bp = Blueprint('Clientes', __name__)
 
+Clientes_bp = Blueprint(
+    'Clientes',
+    __name__
+)
+
+
+# ==========================================================
+# OBTENER TODOS LOS CLIENTES
+# ==========================================================
 
 @Clientes_bp.route('/', methods=['GET'])
 @admin_required
 def get_clientes():
 
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
+    page = request.args.get(
+        'page',
+        1,
+        type=int
+    )
+
+    per_page = request.args.get(
+        'per_page',
+        10,
+        type=int
+    )
 
     if page < 1:
+
         return jsonify({
             'message': 'La página debe ser mayor o igual a 1'
         }), 400
 
     if per_page < 1:
+
         return jsonify({
             'message': 'La cantidad por página debe ser mayor o igual a 1'
         }), 400
@@ -31,7 +50,9 @@ def get_clientes():
         per_page=per_page
     )
 
-    total_pages = (total + per_page - 1) // per_page
+    total_pages = (
+        total + per_page - 1
+    ) // per_page
 
     clientes_list = [
         cliente.to_dict()
@@ -39,15 +60,27 @@ def get_clientes():
     ]
 
     return jsonify({
+
         'data': clientes_list,
+
         'pagination': {
+
             'page': page,
+
             'per_page': per_page,
+
             'total': total,
+
             'pages': total_pages
+
         }
+
     }), 200
 
+
+# ==========================================================
+# OBTENER CLIENTE POR ID
+# ==========================================================
 
 @Clientes_bp.route('/<int:id>', methods=['GET'])
 @admin_required
@@ -57,103 +90,207 @@ def get_cliente(id):
 
     if cliente:
 
-        cliente_data = {
-            'id_cliente': cliente.id_cliente,
-            'nombre_cliente': cliente.nombre_cliente,
-            'nacimiento_cliente': cliente.nacimiento_cliente,
-            'numero_cliente': cliente.numero_cliente,
-            'direccion_cliente': cliente.direccion_cliente,
-            'email_cliente': cliente.email_cliente
-        }
-
-        return jsonify(cliente_data), 200
+        return jsonify(
+            cliente.to_dict()
+        ), 200
 
     return jsonify({
         'message': 'Cliente no encontrado'
     }), 404
 
 
+# ==========================================================
+# CREAR CLIENTE
+# ==========================================================
+
 @Clientes_bp.route('/', methods=['POST'])
 def create_clientes():
 
     data = request.get_json()
 
-    cliente = Cliente(
-        nombre_cliente=data['nombre_cliente'],
-        nacimiento_cliente=data['nacimiento_cliente'],
-        numero_cliente=data['numero_cliente'],
-        direccion_cliente=data['direccion_cliente'],
-        email_cliente=data['email_cliente'],
-        password=data["password"]
-    )
+    if not data:
+
+        return jsonify({
+            'message': 'Debe enviar información'
+        }), 400
+
+    # ======================================================
+    # OBTENER DATOS
+    # ======================================================
+
+    nombre = data.get('nombre_cliente')
+    nacimiento = data.get('nacimiento_cliente')
+    numero = data.get('numero_cliente')
+    direccion = data.get('direccion_cliente')
+    email = data.get('email_cliente')
+    password = data.get('password')
+
+    # ======================================================
+    # VALIDACIONES
+    # ======================================================
+
+    if not nombre:
+
+        return jsonify({
+            'message': 'El nombre es obligatorio'
+        }), 400
+
+    if not nacimiento:
+
+        return jsonify({
+            'message': 'La fecha de nacimiento es obligatoria'
+        }), 400
+
+    if not direccion:
+
+        return jsonify({
+            'message': 'La dirección es obligatoria'
+        }), 400
+
+    if not numero:
+
+        return jsonify({
+            'message': 'El número de cliente es obligatorio'
+        }), 400
+
+    if not email:
+
+        return jsonify({
+            'message': 'El email es obligatorio'
+        }), 400
+
+    if not password:
+
+        return jsonify({
+            'message': 'La contraseña es obligatoria'
+        }), 400
+
+    # ======================================================
+    # VALIDAR NÚMERO
+    # ======================================================
 
     try:
-        float(data['numero_cliente'])
 
-    except ValueError:
+        float(numero)
+
+    except (ValueError, TypeError):
 
         return jsonify({
             'message': 'El número debe ser numérico'
         }), 400
 
-    if cliente.nombre_cliente == '':
+    # ======================================================
+    # VALIDAR EMAIL EXISTENTE
+    # ======================================================
+
+    cliente_existente = Cliente.get_by_email(email)
+
+    if cliente_existente:
 
         return jsonify({
-            'message': 'el nombre del producto es obligatorio'
-        }), 400
+            'message': 'El email ya está registrado'
+        }), 409
 
-    if cliente.nacimiento_cliente == '':
+    # ======================================================
+    # CREAR CLIENTE
+    # ======================================================
+
+    cliente = Cliente(
+
+        nombre_cliente=nombre,
+
+        nacimiento_cliente=nacimiento,
+
+        numero_cliente=numero,
+
+        direccion_cliente=direccion,
+
+        email_cliente=email,
+
+        password=generate_password_hash(password)
+
+    )
+
+    # ======================================================
+    # ESTADO
+    # ======================================================
+
+    cliente.estado_cliente = "Activo"
+
+    try:
+
+        cliente.save()
+
+    except Exception as e:
 
         return jsonify({
-            'message':'la fecha es obligatoria'
-        }), 400
-
-    if cliente.direccion_cliente == '':
-
-        return jsonify({
-            'message':'el codigo debe ser unico para cada producto'
-        }), 400
-
-    if cliente.numero_cliente == '':
-
-        return jsonify({
-            'message':'el numero de cliente debe ser mayor a cero'
-        }), 400
-
-    if cliente.email_cliente == '':
-
-        return jsonify({
-            'message':'el email es obligatorio'
-        }), 400
-
-    cliente.save()
+            'message': 'No se pudo crear el cliente',
+            'error': str(e)
+        }), 500
 
     return jsonify({
-        'message':'Cliente creado exitosamenete',
+
+        'message': 'Cliente creado exitosamente',
+
         'cliente': cliente.to_dict()
+
     }), 201
 
 
-@Clientes_bp.route('/<int:id>', methods=['DELETE'])
+@Clientes_bp.route('/<int:id>/estado', methods=['PUT'])
 @admin_required
-def delete_cliente(id):
+def cambiar_estado_cliente(id):
 
     cliente = Cliente.get_by_id(id)
 
-    if cliente:
-
-        cliente.delete()
-
+    if not cliente:
         return jsonify({
-            'message': 'cliente eliminado exitosamente'
-        }), 200
-
-    else:
-
-        return jsonify({
-            'message': 'cliente no encontrado'
+            'message': 'Cliente no encontrado'
         }), 404
 
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            'message': 'Debe enviar información'
+        }), 400
+
+    estado = data.get('estado_cliente')
+
+    if not estado:
+        return jsonify({
+            'message': 'El estado_cliente es obligatorio'
+        }), 400
+
+    if estado not in ['Activo', 'Inactivo']:
+        return jsonify({
+            'message': 'El estado debe ser Activo o Inactivo'
+        }), 400
+
+    cliente.estado_cliente = estado
+
+    try:
+
+        cliente.save()
+
+    except Exception as e:
+
+        return jsonify({
+            'message': 'No se pudo actualizar el estado del cliente',
+            'error': str(e)
+        }), 500
+
+    return jsonify({
+
+        'message': f'Cliente {estado.lower()} correctamente',
+
+        'cliente': cliente.to_dict()
+
+    }), 200
+
+# ==========================================================
+# ACTUALIZAR CLIENTE - ADMINISTRADOR
+# ==========================================================
 
 @Clientes_bp.route('/<int:id>', methods=['PUT'])
 @admin_required
@@ -161,77 +298,183 @@ def update_Clientes(id):
 
     cliente = Cliente.get_by_id(id)
 
-    if cliente:
+    if not cliente:
 
-        data = request.get_json()
+        return jsonify({
+            'message': 'Cliente no encontrado'
+        }), 404
 
-        cliente.nombre_cliente = data['nombre_cliente']
-        cliente.nacimiento_cliente = data['nacimiento_cliente']
-        cliente.direccion_cliente = data['direccion_cliente']
-        cliente.numero_cliente = data['numero_cliente']
-        cliente.email_cliente = data['email_cliente']
-        cliente.password = data["password"]
-        cliente.activo = True
+    data = request.get_json()
 
-        try:
+    if not data:
 
-            float(data['numero_cliente'])
+        return jsonify({
+            'message': 'Debe enviar información'
+        }), 400
 
-        except ValueError:
+    # ======================================================
+    # DATOS
+    # ======================================================
+
+    nombre = data.get(
+        'nombre_cliente',
+        cliente.nombre_cliente
+    )
+
+    nacimiento = data.get(
+        'nacimiento_cliente',
+        cliente.nacimiento_cliente
+    )
+
+    direccion = data.get(
+        'direccion_cliente',
+        cliente.direccion_cliente
+    )
+
+    numero = data.get(
+        'numero_cliente',
+        cliente.numero_cliente
+    )
+
+    email = data.get(
+        'email_cliente',
+        cliente.email_cliente
+    )
+
+    # ======================================================
+    # VALIDACIONES
+    # ======================================================
+
+    if not nombre:
+
+        return jsonify({
+            'message': 'El nombre es obligatorio'
+        }), 400
+
+    if not nacimiento:
+
+        return jsonify({
+            'message': 'La fecha es obligatoria'
+        }), 400
+
+    if not direccion:
+
+        return jsonify({
+            'message': 'La dirección es obligatoria'
+        }), 400
+
+    if not numero:
+
+        return jsonify({
+            'message': 'El número de cliente es obligatorio'
+        }), 400
+
+    if not email:
+
+        return jsonify({
+            'message': 'El email es obligatorio'
+        }), 400
+
+    # ======================================================
+    # VALIDAR NÚMERO
+    # ======================================================
+
+    try:
+
+        float(numero)
+
+    except (ValueError, TypeError):
+
+        return jsonify({
+            'message': 'El número debe ser numérico'
+        }), 400
+
+    # ======================================================
+    # VALIDAR EMAIL
+    # ======================================================
+
+    if email != cliente.email_cliente:
+
+        cliente_existente = Cliente.get_by_email(email)
+
+        if cliente_existente:
 
             return jsonify({
-                'message': 'El número debe ser numérico'
-            }), 400
+                'message': 'El email ya está registrado'
+            }), 409
 
-        if cliente.nombre_cliente == '':
+    # ======================================================
+    # ACTUALIZAR DATOS
+    # ======================================================
 
-            return jsonify({
-                'message': 'el nombre del producto es obligatorio'
-            }), 400
+    cliente.nombre_cliente = nombre
 
-        if cliente.nacimiento_cliente == '':
+    cliente.nacimiento_cliente = nacimiento
 
-            return jsonify({
-                'message':'la fecha es obligatoria'
-            }), 400
+    cliente.direccion_cliente = direccion
 
-        if cliente.direccion_cliente == '':
+    cliente.numero_cliente = numero
 
-            return jsonify({
-                'message':'el codigo debe ser unico para cada producto'
-            }), 400
+    cliente.email_cliente = email
 
-        if cliente.numero_cliente == '':
+    # ======================================================
+    # ESTADO DEL CLIENTE
+    # ======================================================
 
-            return jsonify({
-                'message':'el numero de cliente debe ser mayor a cero'
-            }), 400
+    if 'estado_cliente' in data:
 
-        if cliente.email_cliente == '':
+        estado = data['estado_cliente']
+
+        if estado not in ['Activo', 'Inactivo']:
 
             return jsonify({
-                'message':'el email es obligatorio'
+                'message': 'El estado debe ser Activo o Inactivo'
             }), 400
+
+        cliente.estado_cliente = estado
+
+    # ======================================================
+    # CONTRASEÑA OPCIONAL
+    # ======================================================
+
+    if 'password' in data and data['password']:
+
+        cliente.password = generate_password_hash(
+            data['password']
+        )
+
+    # ======================================================
+    # GUARDAR
+    # ======================================================
+
+    try:
 
         cliente.save()
 
-        return jsonify({
-            'message':'Cliente actulizado exitosamenete',
-            'cliente': cliente.to_dict()
-        }), 201
-
-    else:
+    except Exception as e:
 
         return jsonify({
-            'message': 'Producto no encontrado'
-        }), 404
+            'message': 'No se pudo actualizar el cliente',
+            'error': str(e)
+        }), 500
+
+    return jsonify({
+
+        'message': 'Cliente actualizado exitosamente',
+
+        'cliente': cliente.to_dict()
+
+    }), 200
 
 
 # ==========================================================
 # OBTENER MI PERFIL
 # ==========================================================
 
-@Clientes_bp.route("/perfil", methods=["GET"])
+@Clientes_bp.route(
+    "/perfil",
+    methods=["GET"]
+)
 @jwt_required()
 def get_perfil():
 
@@ -246,7 +489,9 @@ def get_perfil():
         id_cliente
     )
 
-    cliente = Cliente.get_by_id(id_cliente)
+    cliente = Cliente.get_by_id(
+        id_cliente
+    )
 
     if cliente is None:
 
@@ -254,28 +499,19 @@ def get_perfil():
             "message": "Cliente no encontrado."
         }), 404
 
-    return jsonify({
-
-        "id_cliente": cliente.id_cliente,
-
-        "nombre_cliente": cliente.nombre_cliente,
-
-        "nacimiento_cliente": cliente.nacimiento_cliente,
-
-        "numero_cliente": cliente.numero_cliente,
-
-        "direccion_cliente": cliente.direccion_cliente,
-
-        "email_cliente": cliente.email_cliente
-
-    }), 200
+    return jsonify(
+        cliente.to_dict()
+    ), 200
 
 
 # ==========================================================
 # ACTUALIZAR MI PERFIL
 # ==========================================================
 
-@Clientes_bp.route("/perfil", methods=["PUT"])
+@Clientes_bp.route(
+    "/perfil",
+    methods=["PUT"]
+)
 @jwt_required()
 def actualizar_perfil():
 
@@ -290,7 +526,9 @@ def actualizar_perfil():
         id_cliente
     )
 
-    cliente = Cliente.get_by_id(id_cliente)
+    cliente = Cliente.get_by_id(
+        id_cliente
+    )
 
     if cliente is None:
 
@@ -306,13 +544,31 @@ def actualizar_perfil():
             "message": "Debe enviar información."
         }), 400
 
+    # ======================================================
+    # ACTUALIZAR CAMPOS PERMITIDOS
+    # ======================================================
+
     if "nombre" in data:
 
         cliente.nombre_cliente = data["nombre"]
 
     if "email" in data:
 
-        cliente.email_cliente = data["email"]
+        nuevo_email = data["email"]
+
+        if nuevo_email != cliente.email_cliente:
+
+            cliente_existente = Cliente.get_by_email(
+                nuevo_email
+            )
+
+            if cliente_existente:
+
+                return jsonify({
+                    "message": "El email ya está registrado."
+                }), 409
+
+        cliente.email_cliente = nuevo_email
 
     if "telefono" in data:
 
@@ -321,6 +577,10 @@ def actualizar_perfil():
     if "direccion" in data:
 
         cliente.direccion_cliente = data["direccion"]
+
+    # ======================================================
+    # VALIDACIONES
+    # ======================================================
 
     if not cliente.nombre_cliente:
 
@@ -346,27 +606,26 @@ def actualizar_perfil():
             "message": "La dirección es obligatoria."
         }), 400
 
-    cliente.save()
+    # ======================================================
+    # GUARDAR
+    # ======================================================
+
+    try:
+
+        cliente.save()
+
+    except Exception as e:
+
+        return jsonify({
+            "message": "No se pudo actualizar el perfil.",
+            "error": str(e)
+        }), 500
 
     return jsonify({
 
         "message": "Perfil actualizado correctamente.",
 
-        "cliente": {
-
-            "id_cliente": cliente.id_cliente,
-
-            "nombre_cliente": cliente.nombre_cliente,
-
-            "nacimiento_cliente": cliente.nacimiento_cliente,
-
-            "numero_cliente": cliente.numero_cliente,
-
-            "direccion_cliente": cliente.direccion_cliente,
-
-            "email_cliente": cliente.email_cliente
-
-        }
+        "cliente": cliente.to_dict()
 
     }), 200
 
@@ -393,7 +652,9 @@ def cambiar_password():
         id_cliente
     )
 
-    cliente = Cliente.get_by_id(id_cliente)
+    cliente = Cliente.get_by_id(
+        id_cliente
+    )
 
     if cliente is None:
 
@@ -436,7 +697,9 @@ def cambiar_password():
         password_actual
     ):
 
-        print("CONTRASEÑA ACTUAL INCORRECTA")
+        print(
+            "CONTRASEÑA ACTUAL INCORRECTA"
+        )
 
         return jsonify({
             "message":
@@ -447,9 +710,21 @@ def cambiar_password():
         password_nueva
     )
 
-    cliente.save()
+    try:
 
-    print("CONTRASEÑA ACTUALIZADA CORRECTAMENTE")
+        cliente.save()
+
+    except Exception as e:
+
+        return jsonify({
+            "message":
+                "No se pudo actualizar la contraseña.",
+            "error": str(e)
+        }), 500
+
+    print(
+        "CONTRASEÑA ACTUALIZADA CORRECTAMENTE"
+    )
 
     return jsonify({
 

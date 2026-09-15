@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from src.models.administrador import Administrador
 
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash,  check_password_hash
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -256,6 +256,174 @@ def delete_administrador(id):
         "message": "Administrador eliminado exitosamente."
     }), 200
 
+# ==========================================================
+# CAMBIAR CONTRASEÑA DEL ADMINISTRADOR AUTENTICADO
+# ==========================================================
+
+@Administradores_bp.route(
+    "/cambiar-password",
+    methods=["PUT"]
+)
+@admin_required
+def cambiar_password():
+
+    # ======================================================
+    # OBTENER ADMINISTRADOR DESDE EL JWT
+    # ======================================================
+
+    id_administrador = get_jwt_identity()
+
+    administrador = Administrador.get_by_id(
+        id_administrador
+    )
+
+    if administrador is None:
+
+        return jsonify({
+            "message": "Administrador no encontrado."
+        }), 404
+
+
+    # ======================================================
+    # OBTENER DATOS
+    # ======================================================
+
+    data = request.get_json()
+
+    if not data:
+
+        return jsonify({
+            "message": "Debe enviar información."
+        }), 400
+
+
+    password_actual = data.get(
+        "password_actual"
+    )
+
+    password_nueva = data.get(
+        "password_nueva"
+    )
+
+    password_confirmar = data.get(
+        "password_confirmar"
+    )
+
+
+    # ======================================================
+    # VALIDAR CAMPOS
+    # ======================================================
+
+    if not password_actual:
+
+        return jsonify({
+            "message": "La contraseña actual es obligatoria."
+        }), 400
+
+
+    if not password_nueva:
+
+        return jsonify({
+            "message": "La nueva contraseña es obligatoria."
+        }), 400
+
+
+    if not password_confirmar:
+
+        return jsonify({
+            "message": "Debe confirmar la nueva contraseña."
+        }), 400
+
+
+    # ======================================================
+    # COMPROBAR CONTRASEÑA ACTUAL
+    # ======================================================
+
+    if not check_password_hash(
+        administrador.password_administrador,
+        password_actual
+    ):
+
+        return jsonify({
+            "message": "La contraseña actual es incorrecta."
+        }), 401
+
+
+    # ======================================================
+    # COMPROBAR NUEVA CONTRASEÑA
+    # ======================================================
+
+    if password_nueva != password_confirmar:
+
+        return jsonify({
+            "message": "Las nuevas contraseñas no coinciden."
+        }), 400
+
+
+    # ======================================================
+    # EVITAR MISMA CONTRASEÑA
+    # ======================================================
+
+    if check_password_hash(
+        administrador.password_administrador,
+        password_nueva
+    ):
+
+        return jsonify({
+            "message": "La nueva contraseña debe ser diferente a la actual."
+        }), 400
+
+
+    # ======================================================
+    # VALIDAR LONGITUD
+    # ======================================================
+
+    if len(password_nueva) < 8:
+
+        return jsonify({
+            "message": "La nueva contraseña debe tener mínimo 8 caracteres."
+        }), 400
+
+
+    # ======================================================
+    # GENERAR NUEVO HASH
+    # ======================================================
+
+    nuevo_hash = generate_password_hash(
+        password_nueva
+    )
+
+
+    administrador.password_administrador = \
+        nuevo_hash
+
+
+    # ======================================================
+    # GUARDAR
+    # ======================================================
+
+    try:
+
+        administrador.update()
+
+    except Exception as e:
+
+        return jsonify({
+            "message": "Error al actualizar la contraseña.",
+            "error": str(e)
+        }), 500
+
+
+    # ======================================================
+    # RESPUESTA
+    # ======================================================
+
+    return jsonify({
+
+        "message":
+            "Contraseña actualizada correctamente."
+
+    }), 200
 
 # ==========================================================
 # ACTUALIZAR ADMINISTRADOR

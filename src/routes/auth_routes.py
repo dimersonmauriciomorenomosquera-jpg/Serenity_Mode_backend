@@ -200,110 +200,86 @@ def login():
 
     data = request.get_json()
 
-
     if not data:
 
         return jsonify({
-
-            "message":
-                "Debe enviar información."
-
+            "message": "Debe enviar información."
         }), 400
 
 
+    email = data.get("email")
+    password = data.get("password")
+
+
     # ======================================================
-    # DATOS DEL LOGIN
+    # VALIDAR CORREO
     # ======================================================
-
-    email = data.get(
-        "email"
-    )
-
-    password = data.get(
-        "password"
-    )
-
 
     if not email:
 
         return jsonify({
-
-            "message":
-                "El correo es obligatorio."
-
+            "message": "El correo es obligatorio."
         }), 400
 
+
+    # ======================================================
+    # VALIDAR CONTRASEÑA
+    # ======================================================
 
     if not password:
 
         return jsonify({
-
-            "message":
-                "La contraseña es obligatoria."
-
+            "message": "La contraseña es obligatoria."
         }), 400
 
 
     # ======================================================
-    # PRIMERO BUSCAR ADMINISTRADOR
+    # BUSCAR ADMINISTRADOR
     # ======================================================
 
-    administrador = Administrador.get_by_email(
-        email
-    )
+    administrador = Administrador.get_by_email(email)
 
 
     if administrador:
 
-        # ==============================================
+        # ==================================================
         # VERIFICAR ESTADO
-        # ==============================================
+        # ==================================================
 
         if administrador.estado_administrador != "Activo":
 
             return jsonify({
-
-                "message":
-                    "El administrador está inactivo."
-
+                "message": "El administrador está inactivo."
             }), 403
 
 
-        # ==============================================
+        # ==================================================
         # VERIFICAR CONTRASEÑA
-        # ==============================================
+        # ==================================================
 
         if not check_password_hash(
-
             administrador.password_administrador,
-
             password
-
         ):
 
             return jsonify({
-
-                "message":
-                    "Contraseña incorrecta."
-
+                "message": "Contraseña incorrecta."
             }), 401
 
 
-        # ==============================================
+        # ==================================================
         # CREAR TOKEN ADMINISTRADOR
-        # ==============================================
+        # ==================================================
 
         token = create_access_token(
 
-            identity=
-                str(
-                    administrador.id_administrador
-                ),
+            identity=str(
+                administrador.id_administrador
+            ),
 
             additional_claims={
 
-                "tipo":
-                    "administrador",
+                "tipo": "administrador",
 
                 "rol":
                     administrador.rol_administrador
@@ -313,9 +289,9 @@ def login():
         )
 
 
-        # ==============================================
+        # ==================================================
         # RESPUESTA ADMINISTRADOR
-        # ==============================================
+        # ==================================================
 
         return jsonify({
 
@@ -348,12 +324,10 @@ def login():
 
 
     # ======================================================
-    # SI NO ES ADMINISTRADOR → BUSCAR CLIENTE
+    # BUSCAR CLIENTE
     # ======================================================
 
-    cliente = Cliente.get_by_email(
-        email
-    )
+    cliente = Cliente.get_by_email(email)
 
 
     if cliente is None:
@@ -371,11 +345,8 @@ def login():
     # ======================================================
 
     if not check_password_hash(
-
         cliente.password,
-
         password
-
     ):
 
         return jsonify({
@@ -392,10 +363,9 @@ def login():
 
     token = create_access_token(
 
-        identity=
-            str(
-                cliente.id_cliente
-            ),
+        identity=str(
+            cliente.id_cliente
+        ),
 
         additional_claims={
 
@@ -434,319 +404,5 @@ def login():
                 cliente.email_cliente
 
         }
-
-    }), 200
-
-
-# ==========================================================
-# LOGIN ADMINISTRADOR
-# ==========================================================
-# Se conserva esta ruta por compatibilidad.
-# Si alguna parte de tu proyecto todavía la utiliza,
-# seguirá funcionando.
-# ==========================================================
-
-@Auth_bp.route(
-    "/admin/login",
-    methods=["POST"]
-)
-def login_admin():
-
-    data = request.get_json()
-
-
-    if not data:
-
-        return jsonify({
-
-            "message":
-                "Debe enviar información."
-
-        }), 400
-
-
-    email = data.get(
-        "email_administrador"
-    )
-
-    password = data.get(
-        "password_administrador"
-    )
-
-
-    if not email:
-
-        return jsonify({
-
-            "message":
-                "El correo es obligatorio."
-
-        }), 400
-
-
-    if not password:
-
-        return jsonify({
-
-            "message":
-                "La contraseña es obligatoria."
-
-        }), 400
-
-
-    administrador = Administrador.get_by_email(
-        email
-    )
-
-
-    if administrador is None:
-
-        return jsonify({
-
-            "message":
-                "Administrador no encontrado."
-
-        }), 404
-
-
-    if administrador.estado_administrador != "Activo":
-
-        return jsonify({
-
-            "message":
-                "El administrador está inactivo."
-
-        }), 403
-
-
-    if not check_password_hash(
-
-        administrador.password_administrador,
-
-        password
-
-    ):
-
-        return jsonify({
-
-            "message":
-                "Contraseña incorrecta."
-
-        }), 401
-
-
-    token = create_access_token(
-
-        identity=
-            str(
-                administrador.id_administrador
-            ),
-
-        additional_claims={
-
-            "tipo":
-                "administrador",
-
-            "rol":
-                administrador.rol_administrador
-
-        }
-
-    )
-
-
-    return jsonify({
-
-        "message":
-            "Inicio de sesión de administrador exitoso.",
-
-        "token":
-            token,
-
-        "tipo":
-            "administrador",
-
-        "administrador": {
-
-            "id_administrador":
-                administrador.id_administrador,
-
-            "nombre":
-                administrador.nombre_administrador,
-
-            "email":
-                administrador.email_administrador,
-
-            "rol":
-                administrador.rol_administrador
-
-        }
-
-    }), 200
-
-
-# ==========================================================
-# VERIFICAR CORREO PARA RECUPERACIÓN
-# ==========================================================
-
-@Auth_bp.route(
-    "/recuperar/verificar",
-    methods=["POST"]
-)
-def verificar_correo_recuperacion():
-
-    data = request.get_json()
-
-
-    if not data:
-
-        return jsonify({
-
-            "message":
-                "Debe enviar información."
-
-        }), 400
-
-
-    email = data.get(
-        "email_cliente"
-    )
-
-
-    if not email:
-
-        return jsonify({
-
-            "message":
-                "El correo es obligatorio."
-
-        }), 400
-
-
-    cliente = Cliente.get_by_email(
-        email
-    )
-
-
-    if cliente is None:
-
-        return jsonify({
-
-            "message":
-                "No existe una cuenta asociada a este correo."
-
-        }), 404
-
-
-    return jsonify({
-
-        "message":
-            "Correo verificado correctamente.",
-
-        "usuario": {
-
-            "id_cliente":
-                cliente.id_cliente,
-
-            "nombre":
-                cliente.nombre_cliente,
-
-            "email":
-                cliente.email_cliente
-
-        }
-
-    }), 200
-
-
-# ==========================================================
-# RESTABLECER CONTRASEÑA
-# ==========================================================
-
-@Auth_bp.route(
-    "/recuperar/restablecer",
-    methods=["PUT"]
-)
-def restablecer_password():
-
-    data = request.get_json()
-
-
-    if not data:
-
-        return jsonify({
-
-            "message":
-                "Debe enviar información."
-
-        }), 400
-
-
-    email = data.get(
-        "email_cliente"
-    )
-
-    nueva_password = data.get(
-        "nueva_password"
-    )
-
-
-    if not email:
-
-        return jsonify({
-
-            "message":
-                "El correo es obligatorio."
-
-        }), 400
-
-
-    if not nueva_password:
-
-        return jsonify({
-
-            "message":
-                "La nueva contraseña es obligatoria."
-
-        }), 400
-
-
-    if len(nueva_password) < 8:
-
-        return jsonify({
-
-            "message":
-                "La contraseña debe tener mínimo 8 caracteres."
-
-        }), 400
-
-
-    cliente = Cliente.get_by_email(
-        email
-    )
-
-
-    if cliente is None:
-
-        return jsonify({
-
-            "message":
-                "Usuario no encontrado."
-
-        }), 404
-
-
-    cliente.password = generate_password_hash(
-        nueva_password
-    )
-
-
-    cliente.save()
-
-
-    return jsonify({
-
-        "message":
-            "Contraseña actualizada correctamente."
 
     }), 200
