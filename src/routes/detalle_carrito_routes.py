@@ -1,5 +1,3 @@
-from datetime import date
-
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -64,8 +62,6 @@ def get_detalles():
             detalle.id_producto
         )
 
-        # Si el producto ya no existe,
-        # no lo mostramos.
         if producto is None:
             continue
 
@@ -96,8 +92,7 @@ def get_detalles():
                 float(detalle.precio_unitario),
 
             "subtotal":
-                float(detalle.precio_unitario)
-                * detalle.cantidad,
+                float(detalle.subtotal),
 
             "talla":
                 detalle.talla
@@ -182,7 +177,8 @@ def create_detalle():
     if not data:
 
         return jsonify({
-            "message": "Debe enviar información en formato JSON."
+            "message":
+                "Debe enviar información en formato JSON."
         }), 400
 
     # ======================================================
@@ -215,13 +211,18 @@ def create_detalle():
 
         carrito = Carrito(
 
-            fecha_creacion=date.today(),
+            fecha_creacion=None,
 
             total_carrito=0,
 
             id_cliente=id_cliente
 
         )
+
+        # Usamos la fecha actual directamente
+        from datetime import date
+
+        carrito.fecha_creacion = date.today()
 
         carrito.save()
 
@@ -241,7 +242,8 @@ def create_detalle():
     if producto is None:
 
         return jsonify({
-            "message": "El producto no existe."
+            "message":
+                "El producto no existe."
         }), 404
 
     # ======================================================
@@ -307,28 +309,8 @@ def create_detalle():
 
         talla = None
 
-    print("PRODUCTO:", producto.id_producto)
-    print("TALLA:", talla)
-    print("CANTIDAD:", cantidad)
-
     # ======================================================
     # BUSCAR PRODUCTO YA EXISTENTE
-    # ======================================================
-    #
-    # REGLA DEL CARRITO:
-    #
-    # Mismo producto + misma talla
-    #       ↓
-    # sumar cantidad
-    #
-    # Producto diferente
-    #       ↓
-    # nuevo detalle
-    #
-    # Mismo producto + talla diferente
-    #       ↓
-    # nuevo detalle
-    #
     # ======================================================
 
     detalles_existentes = (
@@ -344,18 +326,12 @@ def create_detalle():
         if detalle.id_producto != producto.id_producto:
             continue
 
-        # Para productos con talla:
-        # producto + talla debe coincidir.
-
         if categoria in ["ropa", "zapatos"]:
 
             if detalle.talla == talla:
 
                 detalle_existente = detalle
                 break
-
-        # Para productos sin talla:
-        # solamente importa el producto.
 
         else:
 
@@ -390,9 +366,9 @@ def create_detalle():
             nueva_cantidad
         )
 
-        # ==============================================
+        # ==================================================
         # VALIDAR STOCK TOTAL
-        # ==============================================
+        # ==================================================
 
         if nueva_cantidad > producto.stock_producto:
 
@@ -401,13 +377,19 @@ def create_detalle():
                     "No hay suficiente stock para agregar esa cantidad."
             }), 400
 
-        # ==============================================
-        # ACTUALIZAR
-        # ==============================================
+        # ==================================================
+        # ACTUALIZAR CANTIDAD
+        # ==================================================
 
         detalle_existente.cantidad = nueva_cantidad
 
         detalle_existente.update()
+
+        # ==================================================
+        # RECALCULAR TOTAL DEL CARRITO
+        # ==================================================
+
+        carrito.recalcular_total()
 
         print(
             "CANTIDAD SUMADA CORRECTAMENTE"
@@ -419,7 +401,10 @@ def create_detalle():
                 "La cantidad del producto fue actualizada.",
 
             "detalle":
-                detalle_existente.to_dict()
+                detalle_existente.to_dict(),
+
+            "total_carrito":
+                float(carrito.total_carrito)
 
         }), 200
 
@@ -427,9 +412,7 @@ def create_detalle():
     # SI NO EXISTE → CREAR DETALLE
     # ======================================================
 
-    precio = float(
-        producto.precio_producto
-    )
+    precio = producto.precio_producto
 
     detalle = Detalle_Carrito(
 
@@ -452,6 +435,12 @@ def create_detalle():
 
     detalle.save()
 
+    # ======================================================
+    # RECALCULAR TOTAL DEL CARRITO
+    # ======================================================
+
+    carrito.recalcular_total()
+
     print(
         "NUEVO DETALLE CREADO:",
         detalle.id_detalle_carrito
@@ -463,7 +452,10 @@ def create_detalle():
             "Producto agregado al carrito correctamente.",
 
         "detalle":
-            detalle.to_dict()
+            detalle.to_dict(),
+
+        "total_carrito":
+            float(carrito.total_carrito)
 
     }), 201
 
@@ -623,13 +615,22 @@ def update_detalle(id):
 
     detalle.update()
 
+    # ======================================================
+    # RECALCULAR TOTAL DEL CARRITO
+    # ======================================================
+
+    carrito.recalcular_total()
+
     return jsonify({
 
         "message":
             "Detalle actualizado correctamente.",
 
         "detalle":
-            detalle.to_dict()
+            detalle.to_dict(),
+
+        "total_carrito":
+            float(carrito.total_carrito)
 
     }), 200
 
@@ -698,9 +699,18 @@ def delete_detalle(id):
 
     detalle.delete()
 
+    # ======================================================
+    # RECALCULAR TOTAL
+    # ======================================================
+
+    carrito.recalcular_total()
+
     return jsonify({
 
         "message":
-            "Producto eliminado del carrito correctamente."
+            "Producto eliminado del carrito correctamente.",
+
+        "total_carrito":
+            float(carrito.total_carrito)
 
     }), 200

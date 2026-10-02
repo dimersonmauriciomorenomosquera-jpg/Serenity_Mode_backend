@@ -1,4 +1,7 @@
 from flask import Flask
+from dotenv import load_dotenv
+import os 
+import mercadopago
 from flask_cors import CORS
 from datetime import timedelta
 from flask_jwt_extended import JWTManager
@@ -24,10 +27,18 @@ from src.routes.factura_routes import Factura_bp
 from src.routes.metodos_pago import metodos_pago_bp
 from src.routes.auth_routes import Auth_bp
 
+# Cargar variables del archivo .env
+load_dotenv()
 
+# Obtener el Access Token de Mercado Pago
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
+
+# Crear cliente del SDK de Mercado Pago
+sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
 
 app = Flask(__name__)
+app.config["MP_SDK"] = sdk
 Base.metadata.create_all(engine)
 
 

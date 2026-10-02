@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, Date, ForeignKey
+from sqlalchemy import Column, Integer, Numeric, Date, ForeignKey, func
 from src.models import Base, session
 
 
@@ -6,19 +6,42 @@ class Carrito(Base):
 
     __tablename__ = "carrito"
 
-    id_carrito = Column(Integer, primary_key=True)
-    fecha_creacion = Column(Date, nullable=False)
-    total_carrito = Column(Numeric(10, 2), nullable=False)
+    id_carrito = Column(
+        Integer,
+        primary_key=True
+    )
+
+    fecha_creacion = Column(
+        Date,
+        nullable=False
+    )
+
+    total_carrito = Column(
+        Numeric(10, 2),
+        nullable=False
+    )
+
     id_cliente = Column(
         Integer,
         ForeignKey("cliente.id_cliente"),
         nullable=False
     )
 
-    def __init__(self, fecha_creacion, total_carrito, id_cliente):
+
+    # ==========================
+    # CONSTRUCTOR
+    # ==========================
+
+    def __init__(
+        self,
+        fecha_creacion,
+        total_carrito,
+        id_cliente
+    ):
         self.fecha_creacion = fecha_creacion
         self.total_carrito = total_carrito
         self.id_cliente = id_cliente
+
 
     # ==========================
     # GUARDAR
@@ -28,6 +51,7 @@ class Carrito(Base):
         session.add(self)
         session.commit()
 
+
     # ==========================
     # ELIMINAR
     # ==========================
@@ -36,12 +60,38 @@ class Carrito(Base):
         session.delete(self)
         session.commit()
 
+
     # ==========================
     # ACTUALIZAR
     # ==========================
 
     def update(self):
         session.commit()
+
+
+    # ==========================
+    # RECALCULAR TOTAL
+    # ==========================
+
+    def recalcular_total(self):
+
+        from src.models.detalle_carrito import Detalle_Carrito
+
+        total = session.query(
+            func.coalesce(
+                func.sum(Detalle_Carrito.subtotal),
+                0
+            )
+        ).filter(
+            Detalle_Carrito.id_carrito == self.id_carrito
+        ).scalar()
+
+        self.total_carrito = total
+
+        session.commit()
+
+        return self.total_carrito
+
 
     # ==========================
     # OBTENER TODOS
@@ -50,6 +100,7 @@ class Carrito(Base):
     @staticmethod
     def get():
         return session.query(Carrito).all()
+
 
     # ==========================
     # OBTENER POR ID CARRITO
@@ -60,6 +111,7 @@ class Carrito(Base):
         return session.query(Carrito).filter_by(
             id_carrito=id_carrito
         ).first()
+
 
     # ==========================
     # OBTENER POR ID CLIENTE

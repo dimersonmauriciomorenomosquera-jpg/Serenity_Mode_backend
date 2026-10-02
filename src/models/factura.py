@@ -1,26 +1,61 @@
-from sqlalchemy import Column, Integer, String, Numeric,Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Numeric, Date, ForeignKey,Time
 from src.models import Base, session
+
+
 
 class Factura(Base):
     __tablename__ = "factura"
 
     id_factura = Column(Integer, primary_key=True)
     fecha_factura = Column(Date, nullable=False)
-    total_pagar = Column(Numeric(10,2), nullable=False)
-    estado_pago = Column(String(50), nullable=False)
-    id_cliente = Column(Integer, ForeignKey("cliente.id_cliente"))
-    id_carrito = Column(Integer, ForeignKey("carrito.id_carrito"))
+    hora_factura = Column(Time, nullable=False)
 
-    def __init__(self, fecha_factura, total_pagar, estado_pago, id_cliente, id_carrito):
+    subtotal_productos = Column(
+        Numeric(10, 2),
+        nullable=False
+    )
+
+    costo_envio = Column(
+        Numeric(10, 2),
+        nullable=False
+    )
+
+    total_pagar = Column(
+        Numeric(10, 2),
+        nullable=False
+    )
+
+    estado_pago = Column(String(50), nullable=False)
+
+    id_cliente = Column(
+        Integer,
+        ForeignKey("cliente.id_cliente")
+    )
+
+    id_carrito = Column(
+        Integer,
+        ForeignKey("carrito.id_carrito")
+    )
+
+    def __init__(
+        self,
+        fecha_factura,
+        subtotal_productos,
+        costo_envio,
+        total_pagar,
+        estado_pago,
+        id_cliente,
+        id_carrito,
+        hora_factura
+    ):
         self.fecha_factura = fecha_factura
+        self.subtotal_productos = subtotal_productos
+        self.costo_envio = costo_envio
         self.total_pagar = total_pagar
         self.estado_pago = estado_pago
         self.id_cliente = id_cliente
         self.id_carrito = id_carrito
-
-    def save(self):
-        session.add(self)
-        session.commit()
+        self.hora_factura = hora_factura
 
     def delete(self):
         session.delete(self)
@@ -48,7 +83,7 @@ class Factura(Base):
     def get_by_id(id):
         return session.query(Factura).filter_by(
             id_factura=id
-        ).first()   
+        ).first()
 
     def save(self):
         try:

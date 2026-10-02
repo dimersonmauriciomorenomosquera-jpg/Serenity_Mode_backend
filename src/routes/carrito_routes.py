@@ -4,7 +4,10 @@ from src.models.carrito import Carrito
 from datetime import datetime
 
 
-Carrito_bp = Blueprint("Carrito", __name__)
+Carrito_bp = Blueprint(
+    "Carrito",
+    __name__
+)
 
 
 # =========================================================
@@ -27,13 +30,20 @@ def get_carrito():
         }), 404
 
     return jsonify({
-        "id_carrito": carrito.id_carrito,
-        "fecha_creacion": str(carrito.fecha_creacion),
-        "total_carrito": float(carrito.total_carrito),
-        "id_cliente": carrito.id_cliente
+
+        "id_carrito":
+            carrito.id_carrito,
+
+        "fecha_creacion":
+            str(carrito.fecha_creacion),
+
+        "total_carrito":
+            float(carrito.total_carrito),
+
+        "id_cliente":
+            carrito.id_cliente
+
     }), 200
-
-
 
 
 # =========================================================
@@ -55,18 +65,31 @@ def get_carrito_by_id(id):
             "message": "Carrito no encontrado"
         }), 404
 
-    # El carrito debe pertenecer al usuario autenticado
+    # =====================================================
+    # VERIFICAR PROPIETARIO
+    # =====================================================
+
     if carrito.id_cliente != int(id_cliente):
 
         return jsonify({
-            "message": "No tienes permiso para acceder a este carrito"
+            "message":
+                "No tienes permiso para acceder a este carrito"
         }), 403
 
     return jsonify({
-        "id_carrito": carrito.id_carrito,
-        "fecha_creacion": str(carrito.fecha_creacion),
-        "total_carrito": float(carrito.total_carrito),
-        "id_cliente": carrito.id_cliente
+
+        "id_carrito":
+            carrito.id_carrito,
+
+        "fecha_creacion":
+            str(carrito.fecha_creacion),
+
+        "total_carrito":
+            float(carrito.total_carrito),
+
+        "id_cliente":
+            carrito.id_cliente
+
     }), 200
 
 
@@ -75,18 +98,24 @@ def get_carrito_by_id(id):
 # GET /carrito/cliente/<id_cliente>
 # =========================================================
 
-@Carrito_bp.route("/cliente/<int:id_cliente>", methods=["GET"])
+@Carrito_bp.route(
+    "/cliente/<int:id_cliente>",
+    methods=["GET"]
+)
 @jwt_required()
 def get_carrito_cliente(id_cliente):
 
     id_usuario = get_jwt_identity()
 
-    # Evitamos que un usuario consulte
-    # el carrito de otro cliente
+    # =====================================================
+    # VERIFICAR PROPIETARIO
+    # =====================================================
+
     if int(id_usuario) != id_cliente:
 
         return jsonify({
-            "message": "No tienes permiso para acceder a este carrito"
+            "message":
+                "No tienes permiso para acceder a este carrito"
         }), 403
 
     carrito = Carrito.get_by_cliente(id_cliente)
@@ -98,10 +127,19 @@ def get_carrito_cliente(id_cliente):
         }), 404
 
     return jsonify({
-        "id_carrito": carrito.id_carrito,
-        "fecha_creacion": str(carrito.fecha_creacion),
-        "total_carrito": float(carrito.total_carrito),
-        "id_cliente": carrito.id_cliente
+
+        "id_carrito":
+            carrito.id_carrito,
+
+        "fecha_creacion":
+            str(carrito.fecha_creacion),
+
+        "total_carrito":
+            float(carrito.total_carrito),
+
+        "id_cliente":
+            carrito.id_cliente
+
     }), 200
 
 
@@ -116,60 +154,7 @@ def create_carrito():
 
     id_cliente = get_jwt_identity()
 
-    data = request.get_json()
-
-    if not data:
-
-        return jsonify({
-            "message": "No se recibieron datos"
-        }), 400
-
-    # =====================================================
-    # FECHA
-    # =====================================================
-
-    fecha_creacion = data.get("fecha_creacion")
-
-    if fecha_creacion:
-
-        try:
-
-            fecha = datetime.strptime(
-                fecha_creacion,
-                "%Y-%m-%d"
-            ).date()
-
-        except ValueError:
-
-            return jsonify({
-                "message": "Formato de fecha inválido (YYYY-MM-DD)"
-            }), 400
-
-    else:
-
-        fecha = datetime.now().date()
-
-    # =====================================================
-    # TOTAL
-    # =====================================================
-
-    total_carrito = data.get("total_carrito", 0)
-
-    try:
-
-        total = float(total_carrito)
-
-        if total < 0:
-
-            return jsonify({
-                "message": "El total no puede ser negativo"
-            }), 400
-
-    except (ValueError, TypeError):
-
-        return jsonify({
-            "message": "El total debe ser numérico"
-        }), 400
+    data = request.get_json(silent=True)
 
     # =====================================================
     # VERIFICAR SI YA EXISTE
@@ -180,43 +165,110 @@ def create_carrito():
     if carrito_existente:
 
         return jsonify({
-            "message": "El cliente ya tiene un carrito",
+
+            "message":
+                "El cliente ya tiene un carrito",
+
             "carrito": {
-                "id_carrito": carrito_existente.id_carrito,
-                "fecha_creacion": str(
-                    carrito_existente.fecha_creacion
-                ),
-                "total_carrito": float(
-                    carrito_existente.total_carrito
-                ),
-                "id_cliente": carrito_existente.id_cliente
+
+                "id_carrito":
+                    carrito_existente.id_carrito,
+
+                "fecha_creacion":
+                    str(
+                        carrito_existente.fecha_creacion
+                    ),
+
+                "total_carrito":
+                    float(
+                        carrito_existente.total_carrito
+                    ),
+
+                "id_cliente":
+                    carrito_existente.id_cliente
             }
+
         }), 409
 
     # =====================================================
-    # CREAR
+    # FECHA
+    # =====================================================
+
+    if data and data.get("fecha_creacion"):
+
+        try:
+
+            fecha = datetime.strptime(
+                data["fecha_creacion"],
+                "%Y-%m-%d"
+            ).date()
+
+        except (
+            ValueError,
+            TypeError
+        ):
+
+            return jsonify({
+                "message":
+                    "Formato de fecha inválido (YYYY-MM-DD)"
+            }), 400
+
+    else:
+
+        fecha = datetime.now().date()
+
+    # =====================================================
+    # CREAR CARRITO
+    # =====================================================
+    #
+    # El total SIEMPRE comienza en 0.
+    #
+    # No recibimos total_carrito del frontend.
+    #
+    # El total será calculado posteriormente
+    # a partir de Detalle_Carrito.
+    #
     # =====================================================
 
     carrito = Carrito(
-        fecha_creacion=fecha,
-        total_carrito=total,
-        id_cliente=id_cliente
+
+        fecha_creacion=
+            fecha,
+
+        total_carrito=
+            0,
+
+        id_cliente=
+            id_cliente
+
     )
 
     carrito.save()
 
     return jsonify({
-        "message": "Carrito creado exitosamente",
+
+        "message":
+            "Carrito creado exitosamente",
+
         "carrito": {
-            "id_carrito": carrito.id_carrito,
-            "fecha_creacion": str(
-                carrito.fecha_creacion
-            ),
-            "total_carrito": float(
-                carrito.total_carrito
-            ),
-            "id_cliente": carrito.id_cliente
+
+            "id_carrito":
+                carrito.id_carrito,
+
+            "fecha_creacion":
+                str(
+                    carrito.fecha_creacion
+                ),
+
+            "total_carrito":
+                float(
+                    carrito.total_carrito
+                ),
+
+            "id_cliente":
+                carrito.id_cliente
         }
+
     }), 201
 
 
@@ -225,7 +277,10 @@ def create_carrito():
 # PUT /carrito/<id>
 # =========================================================
 
-@Carrito_bp.route("/<int:id>", methods=["PUT"])
+@Carrito_bp.route(
+    "/<int:id>",
+    methods=["PUT"]
+)
 @jwt_required()
 def update_carrito(id):
 
@@ -236,7 +291,8 @@ def update_carrito(id):
     if not carrito:
 
         return jsonify({
-            "message": "Carrito no encontrado"
+            "message":
+                "Carrito no encontrado"
         }), 404
 
     # =====================================================
@@ -246,15 +302,17 @@ def update_carrito(id):
     if carrito.id_cliente != int(id_cliente):
 
         return jsonify({
-            "message": "No tienes permiso para modificar este carrito"
+            "message":
+                "No tienes permiso para modificar este carrito"
         }), 403
 
-    data = request.get_json()
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-            "message": "No se recibieron datos"
+            "message":
+                "No se recibieron datos"
         }), 400
 
     # =====================================================
@@ -270,54 +328,58 @@ def update_carrito(id):
                 "%Y-%m-%d"
             ).date()
 
-        except (ValueError, TypeError):
+        except (
+            ValueError,
+            TypeError
+        ):
 
             return jsonify({
-                "message": "Fecha inválida. Usa YYYY-MM-DD"
+                "message":
+                    "Fecha inválida. Usa YYYY-MM-DD"
             }), 400
 
     # =====================================================
     # TOTAL
     # =====================================================
+    #
+    # NO permitimos modificar el total desde el frontend.
+    #
+    # El total se obtiene de los detalles.
+    #
+    # =====================================================
 
-    if "total_carrito" in data:
-
-        try:
-
-            total = float(data["total_carrito"])
-
-            if total < 0:
-
-                return jsonify({
-                    "message": "El total no puede ser negativo"
-                }), 400
-
-            carrito.total_carrito = total
-
-        except (ValueError, TypeError):
-
-            return jsonify({
-                "message": "Total inválido"
-            }), 400
+    carrito.recalcular_total()
 
     # =====================================================
     # GUARDAR
     # =====================================================
 
-    carrito.save()
+    carrito.update()
 
     return jsonify({
-        "message": "Carrito actualizado exitosamente",
+
+        "message":
+            "Carrito actualizado exitosamente",
+
         "carrito": {
-            "id_carrito": carrito.id_carrito,
-            "fecha_creacion": str(
-                carrito.fecha_creacion
-            ),
-            "total_carrito": float(
-                carrito.total_carrito
-            ),
-            "id_cliente": carrito.id_cliente
+
+            "id_carrito":
+                carrito.id_carrito,
+
+            "fecha_creacion":
+                str(
+                    carrito.fecha_creacion
+                ),
+
+            "total_carrito":
+                float(
+                    carrito.total_carrito
+                ),
+
+            "id_cliente":
+                carrito.id_cliente
         }
+
     }), 200
 
 
@@ -326,7 +388,10 @@ def update_carrito(id):
 # DELETE /carrito/<id>
 # =========================================================
 
-@Carrito_bp.route("/<int:id>", methods=["DELETE"])
+@Carrito_bp.route(
+    "/<int:id>",
+    methods=["DELETE"]
+)
 @jwt_required()
 def delete_carrito(id):
 
@@ -337,7 +402,8 @@ def delete_carrito(id):
     if not carrito:
 
         return jsonify({
-            "message": "Carrito no encontrado"
+            "message":
+                "Carrito no encontrado"
         }), 404
 
     # =====================================================
@@ -347,11 +413,13 @@ def delete_carrito(id):
     if carrito.id_cliente != int(id_cliente):
 
         return jsonify({
-            "message": "No tienes permiso para eliminar este carrito"
+            "message":
+                "No tienes permiso para eliminar este carrito"
         }), 403
 
     carrito.delete()
 
     return jsonify({
-        "message": "Carrito eliminado exitosamente"
+        "message":
+            "Carrito eliminado exitosamente"
     }), 200
